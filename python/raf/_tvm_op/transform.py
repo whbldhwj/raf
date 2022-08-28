@@ -121,6 +121,7 @@ def strided_set_compute(attrs, inputs, output_type):
 
 
 _reg.register_strategy("raf.op.tvm.scatter", strategy.scatter_strategy)
+_reg.register_strategy("raf.op.tvm.scatter_add", strategy.scatter_add_strategy)
 _reg.register_injective_schedule("raf.op.tvm.scatter_dx")
 _reg.register_injective_schedule("raf.op.tvm.transpose_dx")
 _reg.register_injective_schedule("raf.op.tvm.transpose")

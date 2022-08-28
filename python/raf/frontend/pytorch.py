@@ -15,7 +15,7 @@ from .._ffi.pass_ import FromRelay, SwitchTrainOp, validate_relay_param_name
 from ..frontend.model import FrameworkModel
 
 
-def trace_model(model, shape_dict):
+def trace_model(model, shape_dict, user_inputs=None):
     """Trace PyTorch model.
 
     Parameters
@@ -79,24 +79,31 @@ def trace_model(model, shape_dict):
             comm = dist.get_communicator()
             device = "cuda:" + str(comm.local_rank)
 
-        example_inputs = []
-        for _, input_info in shape_dict.items():
-            input_shape = input_info[0]
-            input_type = input_info[1]
-            if input_type.startswith("int64"):
-                max_val = 10000 if len(input_info) == 2 else input_info[2]
-                input_data = torch.randint(max_val + 1, input_shape, device=device)
-            elif input_type.startswith("float"):
-                input_data = torch.randn(
-                    input_shape, dtype=getattr(torch, input_type), device=device
-                )
-            else:
-                raise ValueError("Unsupported input type %s" % input_type)
-            example_inputs.append(input_data)
+        if not user_inputs:
+            example_inputs = []
+            for _, input_info in shape_dict.items():
+                input_shape = input_info[0]
+                input_type = input_info[1]
+                if input_type.startswith("int64"):
+                    max_val = 10000 if len(input_info) == 2 else input_info[2]
+                    input_data = torch.randint(max_val + 1, input_shape, device=device)
+                elif input_type.startswith("float"):
+                    input_data = torch.randn(
+                        input_shape, dtype=getattr(torch, input_type), device=device
+                    )
+                else:
+                    raise ValueError("Unsupported input type %s" % input_type)
+                example_inputs.append(input_data)
+        else:
+            example_inputs = user_inputs
 
         with torch.no_grad():
             model.to(device=device)
             scripted_model = torch.jit.trace(model, tuple(example_inputs)).eval()
+        #print(scripted_model.model.aggr.code)
+        #print(scripted_model.model.aggr.graph)
+        #import pdb; pdb.set_trace()
+        
 
         if device.startswith("cuda"):
             model.to(device="cpu")
@@ -112,7 +119,7 @@ def trace_model(model, shape_dict):
     return scripted_model
 
 
-def from_pytorch(model, shape_dict, model_file=None, hash_file=None):
+def from_pytorch(model, shape_dict, model_file=None, hash_file=None, user_inputs=None, print_relay_ir=False):
     """Load PyTorch model and convert into RAF via Relay.
 
     Parameters
@@ -135,6 +142,7 @@ def from_pytorch(model, shape_dict, model_file=None, hash_file=None):
     model: FrameworkModel
         The converted FrameworkModel.
     """
+    #import pdb; pdb.set_trace()
     if model_file is not None and hash_file is not None:
         model_hash = hashlib.md5(str(model).encode(encoding="UTF-8")).hexdigest()
         if os.path.exists(model_file) and os.path.exists(hash_file):
@@ -147,13 +155,13 @@ def from_pytorch(model, shape_dict, model_file=None, hash_file=None):
             except:
                 raise RuntimeError("Loading scripted model failed")
         else:
-            scripted_model = trace_model(model, shape_dict)
+            scripted_model = trace_model(model, shape_dict, user_inputs=user_inputs)
             scripted_model.eval()
             scripted_model.save(model_file)
             with open(hash_file, "w") as hashf:
                 hashf.write(model_hash)
     else:
-        scripted_model = trace_model(model, shape_dict)
+        scripted_model = trace_model(model, shape_dict, user_inputs=user_inputs)
     shape_list = []
     for input_name, input_info in list(shape_dict.items()):
         input_shape = input_info[0]
@@ -164,7 +172,8 @@ def from_pytorch(model, shape_dict, model_file=None, hash_file=None):
     param_dict = {}
     for name, value in py_parameters:
         param_dict[name] = value
-    relay_mod, relay_params = relay.frontend.from_pytorch(scripted_model, shape_list)
+    #import pdb; pdb.set_trace()
+    relay_mod, relay_params = relay.frontend.from_pytorch(scripted_model, shape_list, print_relay_ir=print_relay_ir)
     meta_mod = FromRelay()(relay_mod)
     meta_params = OrderedDict()
     aux_params = OrderedDict()

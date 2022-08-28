@@ -328,6 +328,8 @@ register_op_cast_rule("raf.op.numel", infer_cast(1))
 register_op_cast_rule("raf.op.shape_as_tensor", infer_cast(1))
 register_op_cast_rule("raf.op.embedding", infer_cast(2))
 register_op_cast_rule("raf.op.take", infer_cast(2))
+register_op_cast_rule("raf.op.unique_dim", infer_cast(1))
+register_op_cast_rule("raf.op.upper_bound.unique_dim", infer_cast(1))
 
 # Special cases.
 

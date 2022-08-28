@@ -334,12 +334,25 @@ class Interpreter final : public ExprFunctor<Value(const Expr& n)>, public Execu
 
     if (use_upper_bound) {
       auto tup = Downcast<TupleValue>(call->out);
-      auto data = Downcast<TensorValue>(tup->fields[0]);
-      auto shape_data = Downcast<TensorValue>(tup->fields[1]);
-      shape_data = Downcast<TensorValue>(CopyTo(shape_data, Device(DevType::kCPU(), 0)));
-      auto shape = common::shape_utils::GetShapeVecFromData(shape_data);
-      auto new_out = data.CreateView(shape);
-      call->out = new_out;
+      CHECK_EQ(tup->fields.size() % 2, 0);
+      if (tup->fields.size() == 2) {
+        auto data = Downcast<TensorValue>(tup->fields[0]);
+        auto shape_data = Downcast<TensorValue>(tup->fields[1]);
+        shape_data = Downcast<TensorValue>(CopyTo(shape_data, Device(DevType::kCPU(), 0)));
+        auto shape = common::shape_utils::GetShapeVecFromData(shape_data);
+        auto new_out = data.CreateView(shape);
+        call->out = new_out;
+      } else {
+        Array<Value> new_outs;
+        for (int i = 0; i < tup->fields.size() / 2; ++i) {
+          auto data = Downcast<TensorValue>(tup->fields[2 * i]);
+          auto shape_data = Downcast<TensorValue>(tup->fields[2 * i + 1]);
+          shape_data = Downcast<TensorValue>(CopyTo(shape_data, Device(DevType::kCPU(), 0)));
+          auto shape = common::shape_utils::GetShapeVecFromData(shape_data);
+          new_outs.push_back(data.CreateView(shape));  
+        }
+        call->out = TupleValue::make(new_outs);
+      }
     }
   }
 

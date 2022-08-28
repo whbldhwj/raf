@@ -376,6 +376,8 @@ RAF_OP_GRAD("raf.op.where", WhereGrad);
 
 RAF_OP_GRAD("raf.op.argwhere", NoGrads<1>);
 
+RAF_OP_GRAD("raf.op.unique_dim", NoGrads<1>);
+
 RAF_OP_GRAD("raf.op.ndarray_size", NoGrads<1>);
 
 Array<Expr> Resize2dGrad(const Expr& orig_call, const Array<Expr> orig_args, const Var& y,

@@ -76,6 +76,7 @@ OP_MAP = {
     "raf.op.tvm.sequence_mask": "sequence_mask",
     "raf.op.tvm.reverse_sequence": "reverse_sequence",
     "raf.op.tvm.scatter": "scatter",
+    "raf.op.tvm.scatter_add": "scatter_add",
     "raf.op.tvm.sigmoid": "sigmoid",
     "raf.op.tvm.sign": "sign",
     "raf.op.tvm.sin": "sin",
@@ -114,4 +115,5 @@ OP_MAP = {
     "raf.op.tvm.batch_flatten": "nn.batch_flatten",
     "raf.op.tvm.device_copy": "device_copy",
     "raf.op.tvm.roi_align": "vision.roi_align",
+    "raf.op.tvm.copy": "copy",
 }

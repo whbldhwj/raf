@@ -805,6 +805,13 @@ SCHEMAS = {
         Arg(name="x", cxx_type="value::BaseTensorValue"),
         Arg(name="y", cxx_type="value::BaseTensorValue"),
     ],
+    "transform.h::unique_dim": [
+        Arg(name="data", cxx_type="value::BaseTensorValue"),
+        Arg(name="sorted", cxx_type="bool", cxx_default=True),
+        Arg(name="return_inverse", cxx_type="bool", cxx_default=False),
+        Arg(name="return_counts", cxx_type="bool", cxx_default=False),
+        Arg(name="dim", cxx_type="int", cxx_default=-1),
+    ],    
     "memory.h::device_copy": [
         Arg(name="data", cxx_type="value::BaseTensorValue"),
         Arg(

@@ -450,6 +450,15 @@ Type ScatterInfer(const CallValues& value) {
 
 RAF_OP_TYPE("raf.op.scatter", "Scatter", ScatterInfer);
 
+Type ScatterAddInfer(const CallValues& value) {
+  const auto* args = value->args.as<ScatterArgs>();
+  CHECK(args != nullptr);
+  TensorType x = Downcast<TensorType>(GetType(args->x));
+  return x;
+}
+
+RAF_OP_TYPE("raf.op.scatter_add", "ScatterAdd", ScatterAddInfer);
+
 Type ScatterDxInfer(const CallValues& value) {
   const auto* args = value->args.as<ScatterDxArgs>();
   CHECK(args != nullptr);
@@ -992,6 +1001,55 @@ Type SizeInfer(const CallValues& value) {
 }
 
 RAF_OP_TYPE("raf.op.size", "Size", SizeInfer);
+
+Type UniqueDimInfer(const CallValues& value) {
+  const auto* args = value->args.as<UniqueDimArgs>();
+  CHECK(args != nullptr);
+  auto data = args->data;
+  TensorType ty = Downcast<TensorType>(GetType(data));
+  Array<tvm::PrimExpr> shape;
+  for (int i = 0; i < ty->shape.size(); ++i) {
+    if (i == args->dim)
+      shape.push_back(Any());
+    else
+      shape.push_back(ty->shape[i]);
+  }
+  
+  Array<Type> ret;
+  ret.push_back(TensorType(shape, ty->dtype));
+  ret.push_back(TensorType({ty->shape[args->dim]}, DataType::Int(64)));
+  if (args->return_counts)
+    ret.push_back(TensorType({Any()}, DataType::Int(64)));
+  
+  return TupleType(ret);
+}
+
+RAF_OP_TYPE("raf.op.unique_dim", "UniqueDim", UniqueDimInfer);
+
+Type UpperBoundUniqueDimInfer(const CallValues& value) {
+  const auto* args = value->args.as<UniqueDimArgs>();
+  CHECK(args != nullptr);
+  auto data = args->data;
+  int dim = args->dim;
+  TensorType ty = Downcast<TensorType>(GetType(data));
+  Array<tvm::PrimExpr> oshape(ty->shape);
+  Array<tvm::PrimExpr> odimshape;
+  odimshape.push_back(ty->shape[args->dim]);
+
+  Array<Type> ret;  
+  ret.push_back(TensorType(oshape, ty->dtype));
+  ret.push_back(TensorType({2}, DataType::Int(64)));  
+  ret.push_back(TensorType(odimshape, ty->dtype));
+  ret.push_back(TensorType({1}, DataType::Int(64)));  
+  if (args->return_counts) {
+    ret.push_back(TensorType(odimshape, ty->dtype));
+    ret.push_back(TensorType({1}, DataType::Int(64)));  
+  }  
+  
+  return TupleType(ret);  
+}
+
+RAF_OP_TYPE("raf.op.upper_bound.unique_dim", "UpperBoundUniqueDim", UpperBoundUniqueDimInfer);
 
 }  // namespace op
 }  // namespace raf

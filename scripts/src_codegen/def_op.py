@@ -149,6 +149,7 @@ OPS = [
     Op(name="layer_norm", schema_name="layer_norm"),
     Op(name="layer_norm_train", schema_name="layer_norm"),
     Op(name="scatter", schema_name="scatter"),
+    Op(name="scatter_add", schema_name="scatter"),
     Op(name="scatter_dx", schema_name="scatter_dx"),
     Op(name="layer_norm_dx", schema_name="layer_norm_dx"),
     Op(name="layer_norm_train_dx", schema_name="layer_norm_train_dx"),
@@ -192,6 +193,8 @@ OPS = [
     Op(name="upper_bound.argwhere", schema_name="argwhere"),
     Op(name="roi_align", schema_name="roi_align"),
     Op(name="roi_align_dx", schema_name="roi_align_dx"),
+    Op(name="unique_dim", schema_name="unique_dim"), 
+    Op(name="upper_bound.unique_dim", schema_name="unique_dim"),
     # Sharding ops
     Op(name="_reshard", schema_name="unary"),
     # Stream ops

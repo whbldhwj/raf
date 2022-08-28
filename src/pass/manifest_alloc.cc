@@ -197,7 +197,21 @@ class ManifestAllocMutator : public ExprMutator {
 
         // if op uses upper bound shape, reshapes its results
         if (op && use_upper_bound) {
-          return Call(vm_set_shape_op, outs);
+          //return Call(vm_set_shape_op, outs);
+          CHECK_EQ(outs.size() % 2, 0);
+          if (outs.size() == 2) {
+            return Call(vm_set_shape_op, outs);
+          } else {
+            std::vector<Expr> outs_new;
+            std::vector<Type> out_types_new;
+            for (int i = 0; i < outs.size() / 2; ++i) {
+              std::vector<Expr> outs_tmp = {outs[2 * i], outs[2 * i + 1]};
+              Expr out = Call(vm_set_shape_op, outs_tmp);
+              outs_new.push_back(out);
+              out_types_new.push_back(out_types[2 * i]);
+            }
+            return tvm::relay::ToTupleType(TupleType(out_types_new), outs_new);          
+          }
         }
         return tvm::relay::ToTupleType(ret_type, outs);
       }

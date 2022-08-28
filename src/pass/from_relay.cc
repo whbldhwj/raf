@@ -141,7 +141,7 @@ struct ConvertEmbedding : RelayPattern {
     // Relay take ops. For example, in Relay PyTorch frontend, both embedding and size ops
     // may have mode=clip and axis=0. It means we may mis-convert a size op to an embedding op.
     // A long-term solution is introducing embedding op in Relay, or use our own PyTorch frontend
-    // instead of relying on Relay frontned.
+    // instead of relying on Relay frontend.
     this->check = PackedFunc([](TVMArgs args, TVMRetValue* rv) {
       CHECK_EQ(args.size(), 1U);
       Call take_call = args[0];
@@ -191,10 +191,40 @@ struct ConvertEmbedding : RelayPattern {
   }
 };
 
+/*
+struct ConvertUniqueDim : RelayPattern {
+ public:
+  ConvertUniqueDim() {
+    // First match all unique ops.
+    //this->pattern = IsOp("unique")({IsWildcard(), IsWildcard()});
+    //this->pattern = IsOp("unique");
+    this->pattern = IsOp("unique_dim")({IsWildcard(), IsWildcard(), IsWildcard()});
+    //LOG(WARNING) << "captured";
+
+    // Then check if the dim is not negative.
+    this->check = PackedFunc([](TVMArgs args, TVMRetValue* rv) {
+      CHECK_EQ(args.size(), 1U);
+      Call unique_call = args[0];
+
+      const auto* relay_attrs = unique_call->attrs.as<UniqueAttrs>();
+      LOG(WARNING) << relay_attrs->dim->value;
+      *rv = relay_attrs->dim->value != -1;
+    });
+  }
+
+  Expr convert(Function func, Array<Expr> args, LetList* scope) {
+    LOG(WARNING) << "Converted a relay.unique(data, sorted, return_inverse, return_counts, dim) to raf.unique_dim.";
+    static const Op& op = Op::Get("raf.op.upper_bound.unique_dim");
+    return Call(op, args);
+  }
+};
+*/
+
 static const std::unordered_map<String, std::shared_ptr<RelayPattern>> composite_patterns{
     {String("dense"), std::shared_ptr<RelayPattern>(new ConvertDense)},
     {String("gelu"), std::shared_ptr<RelayPattern>(new CompositeGelu)},
     {String("embedding"), std::shared_ptr<RelayPattern>(new ConvertEmbedding)}};
+    //{String("unique_dim"), std::shared_ptr<RelayPattern>(new ConvertUniqueDim)}};
 
 // We set the parameters to be RAF model attributes, so their names
 // have to be valid variable names in Python.

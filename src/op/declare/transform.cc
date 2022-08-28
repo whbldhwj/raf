@@ -832,6 +832,36 @@ RAF_OP_DECLARE("raf.op.scatter", [](const CallValues& call) {
   call->device = x->device;
 });
 
+RAF_OP_DECLARE("raf.op.scatter_add", [](const CallValues& call) {
+  const auto* args = call->args.as<ScatterArgs>();
+  CHECK(args != nullptr);
+  DLTensor* x = args->x;
+  DLTensor* index = args->index;
+  DLTensor* src_tensor = args->src;
+  int64_t axis = (args->axis.as<IntValueObj>())->value;
+
+  CHECK_EQ(x->ndim, index->ndim);
+  std::vector<int64_t> x_shape(x->shape, x->shape + x->ndim);
+  std::vector<int64_t> index_shape(index->shape, index->shape + index->ndim);
+  for (int64_t i = 0; i < index->ndim; i++) {
+    if (i == axis) continue;
+    CHECK_LE(index_shape[i], x_shape[i])
+        << "The dimension " << i << "of index must be less than that of x";
+  }
+
+  std::vector<int64_t> src_shape(src_tensor->shape, src_tensor->shape + src_tensor->ndim);
+  CHECK_EQ(src_tensor->ndim, index->ndim);
+  for (int64_t i = 0; i < index->ndim; i++) {
+    CHECK_LE(index_shape[i], src_shape[i])
+        << "The dimension " << i << "of index must be less that that of src";
+  }
+
+  call->out = TensorValue::Assemble(/*dev=*/x->device,
+                                    /*dtype=*/x->dtype,
+                                    /*shape=*/x_shape);
+  call->device = x->device;
+});
+
 RAF_OP_DECLARE("raf.op.scatter_dx", [](const CallValues& call) {
   const auto* args = call->args.as<ScatterDxArgs>();
   CHECK(args != nullptr);
@@ -1111,19 +1141,60 @@ RAF_OP_DECLARE("raf.op.size", [](const CallValues& call) {
     const auto* v = args->axis.as<IntValueObj>();
     CHECK(v != nullptr);
     call->out = TensorValue::Assemble(/*dev=*/Device(DevType::kCPU(), 0),
-                                      /*dtype=*/DType(DTypeCode::kInt(), 32),
+                                      /*dtype=*/DType(DTypeCode::kInt(), 64),
                                       /*shape=*/std::vector<int64_t>());
   } else {
     Array<Value> outs;
     for (int i = 0; i < x->ndim; ++i) {
       outs.push_back(TensorValue::Assemble(/*dev=*/Device(DevType::kCPU(), 0),
-                                           /*dtype=*/DType(DTypeCode::kInt(), 32),
+                                           /*dtype=*/DType(DTypeCode::kInt(), 64),
                                            /*shape=*/std::vector<int64_t>()));
     }
     call->out = TupleValue::make(outs);
   }
   call->device = x->device;
 });
+
+RAF_OP_DECLARE("raf.op.upper_bound.unique_dim", [](const CallValues& call) {
+  const auto* args = call->args.as<UniqueDimArgs>();
+  CHECK(args != nullptr);
+  const DLTensor* data = args->data;
+        
+  CHECK_EQ(args->dim, 0) << "UniqueDim operator requires dim to be 0";          
+
+  Array<Value> outs;
+  std::vector<int64_t> shape(data->shape, data->shape + data->ndim);
+  // output
+  outs.push_back(TensorValue::Assemble(/*dev=*/data->device,
+                                       /*dtype=*/data->dtype,
+                                       /*shape=*/shape));  
+  outs.push_back(TensorValue::Assemble(/*dev=*/data->device,
+                                       /*dtype=*/DLDataType(DataType::Int(64)),
+                                       /*shape=*/{2}));   
+  // inverse_indices
+  outs.push_back(TensorValue::Assemble(/*dev=*/data->device,
+                                       /*dtype=*/DLDataType(DataType::Int(64)),
+                                       /*shape=*/{data->shape[args->dim]}));  
+  outs.push_back(TensorValue::Assemble(/*dev=*/data->device,
+                                       /*dtype=*/DLDataType(DataType::Int(64)),
+                                       /*shape=*/{1}));   
+  if (args->return_counts) {
+    // counts
+    outs.push_back(TensorValue::Assemble(/*dev=*/data->device,
+                                         /*dtype=*/DLDataType(DataType::Int(64)),
+                                         /*shape=*/{data->shape[args->dim]}));
+    outs.push_back(TensorValue::Assemble(/*dev=*/data->device,
+                                         /*dtype=*/DLDataType(DataType::Int(64)),
+                                         /*shape=*/{1}));
+  }
+  
+  call->out = TupleValue::make(outs);
+  call->device = data->device;
+});
+
+RAF_REGISTER_OP("raf.op.unique_dim")
+    .set_attr<TOpPattern>("TOpPattern", kOpaque)
+    .set_attr<Op>("TRAFUpperBoundOp", Op::Get("raf.op.upper_bound.unique_dim"));
 
 }  // namespace declare
 }  // namespace op

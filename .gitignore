@@ -1,3 +1,5 @@
+3rdparty/tvm
+
 # Auto generated files.
 src/op/schema/
 !src/op/schema/list_args.h

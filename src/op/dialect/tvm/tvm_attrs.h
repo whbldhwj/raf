@@ -63,6 +63,8 @@ using tvm::relay::TakeAttrs;
 using tvm::relay::ThreefryGenerateAttrs;
 using tvm::relay::TopKAttrs;
 using tvm::relay::TransposeAttrs;
+//using tvm::relay::UniqueAttrs;
+//using tvm::relay::UniqueDimAttrs;
 
 // Helper functions
 template <typename T>

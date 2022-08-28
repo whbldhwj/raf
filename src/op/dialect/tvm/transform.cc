@@ -462,6 +462,40 @@ HashKey ScatterHasher(const std::vector<Type>& param_types, const Type& y_type,
 RAF_TVM(scatter, Scatter, ScatterArgs, ScatterSchema2Args, ScatterSchemaArgNames,
         ScatterSchema2Attrs, ScatterHasher, kInjective);
 
+std::vector<Value> ScatterAddSchema2Args(const ScatterArgs* args) {
+  return {args->x, args->index, args->src};
+}
+
+std::vector<std::string> ScatterAddSchemaArgNames(const op::CallValues& call) {
+  return {"x", "index", "src"};
+}
+
+Attrs ScatterAddSchema2Attrs(const ScatterArgs* args) {
+  auto attrs = make_object<ScatterAttrs>();
+  if (args->axis.defined()) {
+    const auto* v = args->axis.as<IntValueObj>();
+    CHECK(v != nullptr);
+    attrs->axis = v->value;
+  } else {
+    attrs->axis = NullValue<Integer>();
+  }
+  return Attrs(attrs);
+}
+
+HashKey ScatterAddHasher(const std::vector<Type>& param_types, const Type& y_type,
+                         const ScatterArgs* args) {
+  HashKey key = GenericHasher<nullptr_t>(param_types, y_type, nullptr);
+  if (args->axis.defined()) {
+    const auto* v = args->axis.as<IntValueObj>();
+    CHECK(v != nullptr);
+    key << v->value;
+  }
+  return key;
+}
+
+RAF_TVM(scatter_add, ScatterAdd, ScatterArgs, ScatterAddSchema2Args, ScatterAddSchemaArgNames,
+        ScatterAddSchema2Attrs, ScatterAddHasher, kInjective);        
+
 std::vector<Value> ScatterDxSchema2Args(const ScatterDxArgs* args) {
   return {args->x, args->y, args->dy, args->index, args->src};
 }
@@ -1213,6 +1247,28 @@ RAF_TVM(cumsum, Cumsum, CumsumArgs, CumsumSchema2Args, CumsumSchemaArgNames, Cum
 
 RAF_TVM(collapse_sum_like, CollapseSumLike, BinaryLikeArgs, BinaryLikeSchema2Args,
         BinaryLikeSchemaArgNames, GenericAttrs, GenericHasher, kCommReduce);
+
+std::vector<Value> UniqueDimSchema2Args(const UniqueDimArgs* args) {
+  return {args->data};
+}
+
+std::vector<std::string> UniqueDimSchemaArgNames(const op::CallValues& call) {
+  return {"data"};
+}
+
+Attrs UniqueDimSchema2Attrs(const UniqueDimArgs* args) {  
+  auto attrs = make_object<UniqueAttrs>(); 
+  attrs->sorted = Bool(args->sorted);
+  attrs->return_inverse = Bool(args->return_inverse); 
+  attrs->return_counts = Bool(args->return_counts);
+  attrs->dim = Integer(args->dim);
+  return Attrs(attrs);
+}
+
+//RAF_TVM(unique_dim, UniqueDim, UniqueDimArgs, UniqueDimSchema2Args, UniqueDimSchemaArgNames,
+//        UniqueDimSchema2Attrs, GenericHasher, kOpaque);
+RAF_TVM(upper_bound.unique_dim, UniqueDim, UniqueDimArgs, UniqueDimSchema2Args, UniqueDimSchemaArgNames,
+        UniqueDimSchema2Attrs, GenericHasher, kOpaque);
 
 }  // namespace tvm_dialect
 }  // namespace op

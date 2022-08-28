@@ -73,6 +73,20 @@ struct SwapAxisAttrs : public tvm::AttrsNode<SwapAxisAttrs> {
   }
 };
 
+/*! \brief Attributes for unique_dim operator */
+struct UniqueAttrs : public tvm::AttrsNode<UniqueAttrs> {
+  bool sorted;
+  bool return_inverse;
+  bool return_counts;
+  Integer dim;
+  TVM_DECLARE_ATTRS(UniqueAttrs, "relay.attrs.UniqueAttrs") {
+    TVM_ATTR_FIELD(sorted).describe("Return sorted unique elements.");
+    TVM_ATTR_FIELD(return_inverse).describe("Return inverse indices.");
+    TVM_ATTR_FIELD(return_counts).describe("Return counts.");
+    TVM_ATTR_FIELD(dim).describe("Dimension of the array to be applied.");
+  }
+};
+
 }  // namespace tvm_dialect
 }  // namespace op
 }  // namespace raf

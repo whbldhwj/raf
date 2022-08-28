@@ -273,6 +273,26 @@ RAF_OP_FROM_RELAY("cumsum", "raf.op.cumsum",
                     return raf_args;
                   });
 
+RAF_OP_FROM_RELAY("unique_dim", "raf.op.unique_dim",
+                  [&](const Attrs& attrs, const Array<Expr>& args, const VarValueMap& val_map) {
+                    Array<Expr> raf_args = args;
+                    const auto* relay_attrs = attrs.as<UniqueAttrs>();
+                    raf_args.push_back(MakeConstant(BoolValue::make(bool(relay_attrs->sorted)))); // sorted
+                    raf_args.push_back(MakeConstant(BoolValue::make(bool(true)))); // return_inverse
+                    raf_args.push_back(MakeConstant(BoolValue::make(bool(relay_attrs->return_counts)))); // return_counts
+                    raf_args.push_back(MakeConstant(ScalarValue::make(relay_attrs->dim.IntValue()))); // dim
+                    return raf_args;
+                  });
+
+RAF_OP_FROM_RELAY("scatter_add", "raf.op.scatter_add",
+                  [&](const Attrs& attrs, const Array<Expr>& args, const VarValueMap& val_map) {
+                    Array<Expr> raf_args = args;
+                    const auto* relay_attrs = attrs.as<ScatterAddAttrs>();
+                    raf_args.push_back(
+                        MakeConstant(ScalarValue::make(relay_attrs->axis.IntValue())));                    
+                    return raf_args;
+                  });
+
 }  // namespace from_relay
 }  // namespace op
 }  // namespace raf
